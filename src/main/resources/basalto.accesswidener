@@ -1,3 +1,4 @@
 accessWidener	v1	official
 accessible	field	net/minecraft/client/Minecraft	rightClickDelay	I
 accessible	field	net/minecraft/client/multiplayer/MultiPlayerGameMode	destroyDelay	I
+accessible	method	net/minecraft/client/gui/GuiGraphicsExtractor	innerBlit	(Lcom/mojang/blaze3d/pipeline/RenderPipeline;Lcom/mojang/blaze3d/textures/GpuTextureView;Lcom/mojang/blaze3d/textures/GpuSampler;IIIIFFFFI)V

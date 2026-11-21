@@ -1,36 +1,71 @@
 package com.basalto.config;
 
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.Map;
+import java.util.Set;
 
 import org.lwjgl.glfw.GLFW;
 
-/** Aparência do client, tecla do menu e o que aparece no HUD. */
-public final class ClientSettings {
-	public static final int[] ACCENTS = {0xFF4ADE80, 0xFF60A5FA, 0xFFF59E0B, 0xFFC084FC, 0xFFF472B6, 0xFFE5E7EB};
-	public static final String[] ACCENT_NAMES = {"Verde", "Azul", "Laranja", "Roxo", "Rosa", "Branco"};
+import com.basalto.ui.Anim;
+import com.basalto.ui.Theme;
 
-	public int accent = ACCENTS[0];
-	/** Opacidade dos painéis, 30 a 100 (%). */
-	public int opacity = 78;
-	/** Desfoca o jogo atrás do menu. */
-	public boolean blur = true;
+/**
+ * Preferências do client (aparência, interface, sons, privacidade, HUD).
+ * Salvo inteiro pelo Gson no basalto.json; campo novo ganha o valor padrão daqui.
+ */
+public final class ClientSettings {
+	public enum UiSize { PEQUENO, MEDIO, GRANDE }
+
+	/** Versão do formato. Configs sem ela vêm da interface antiga. */
+	public int uiVersion = 2;
+
+	// Aparência
+	public boolean darkTheme = true;
+	public int accent = Theme.ACCENTS[0];
+	/** Opacidade da janela do menu, 30 a 100 (%). */
+	public int opacity = 90;
+
+	// Interface
+	public UiSize uiSize = UiSize.MEDIO;
+	public boolean sidebarCollapsed = false;
+	/** "dashboard" ou "last". */
+	public String startPage = "dashboard";
+	public String lastPage = "dashboard";
+
+	// Geral
+	public boolean pauseGame = false;
 	public int menuKey = GLFW.GLFW_KEY_RIGHT_SHIFT;
 
+	// Desempenho
+	public boolean blur = true;
+	public Anim.Motion motion = Anim.Motion.FULL;
+
+	// Áudio
+	public boolean uiSounds = true;
+	public int uiVolume = 50;
+
+	// Privacidade
+	public boolean streamerMode = false;
+	public boolean keepActivity = true;
+
+	/** Módulos marcados com estrela. */
+	public Set<String> favorites = new LinkedHashSet<>();
+
 	/** Elementos do HUD: id -> visível. A ordem é a do menu. */
-	public final Map<String, Boolean> hud = new LinkedHashMap<>();
-	public static final Map<String, String> HUD_LABELS = new LinkedHashMap<>();
+	public Map<String, Boolean> hud = new LinkedHashMap<>();
+	public static final Map<String, String[]> HUD_LABELS = new LinkedHashMap<>();
 
 	static {
-		HUD_LABELS.put("watermark", "Logo");
-		HUD_LABELS.put("fps", "FPS");
-		HUD_LABELS.put("arraylist", "Lista de módulos");
-		HUD_LABELS.put("coords", "Coordenadas");
-		HUD_LABELS.put("potions", "Poções");
-		HUD_LABELS.put("armor", "Armadura");
-		HUD_LABELS.put("keystrokes", "Keystrokes");
-		HUD_LABELS.put("target", "Info do alvo");
-		HUD_LABELS.put("notifications", "Notificações");
+		HUD_LABELS.put("watermark", new String[] {"Logo", "Nome do client no canto superior esquerdo.", "layout-grid"});
+		HUD_LABELS.put("fps", new String[] {"FPS", "Quadros por segundo ao lado do logo.", "gauge"});
+		HUD_LABELS.put("arraylist", new String[] {"Lista de módulos", "Módulos ligados, no canto superior direito.", "list"});
+		HUD_LABELS.put("coords", new String[] {"Coordenadas", "Posição, Nether/Overworld e direção.", "map-pin"});
+		HUD_LABELS.put("potions", new String[] {"Efeitos", "Poções ativas e o tempo que falta.", "heart-pulse"});
+		HUD_LABELS.put("armor", new String[] {"Armadura", "Peças equipadas com a durabilidade.", "shield"});
+		HUD_LABELS.put("keystrokes", new String[] {"Teclas", "W, A, S e D acendem quando apertadas.", "keyboard"});
+		HUD_LABELS.put("target", new String[] {"Info do alvo", "Vida e distância de quem está na mira.", "crosshair"});
+		HUD_LABELS.put("notifications", new String[] {"Notificações", "Aviso ao ligar ou desligar um módulo.", "bell"});
 	}
 
 	public ClientSettings() {
@@ -42,14 +77,13 @@ public final class ClientSettings {
 		return hud.getOrDefault(id, true);
 	}
 
-	/** Cor de fundo dos painéis com a opacidade escolhida. */
-	public int panelColor() {
-		int a = Math.round(opacity / 100f * 255f);
-		return (a << 24) | 0x0F1116;
+	public Theme theme() {
+		return Theme.of(darkTheme, accent);
 	}
 
+	/** Fundo das caixas do HUD com a opacidade escolhida. */
 	public int hudBgColor() {
-		int a = Math.round(Math.max(0.3f, opacity / 100f - 0.1f) * 255f);
-		return (a << 24) | 0x0A0C10;
+		float a = Math.max(0.3f, opacity / 100f - 0.1f);
+		return darkTheme ? com.basalto.ui.Colors.withAlpha(0xFF0C1214, a) : com.basalto.ui.Colors.withAlpha(0xFFF4F8F7, a);
 	}
 }
