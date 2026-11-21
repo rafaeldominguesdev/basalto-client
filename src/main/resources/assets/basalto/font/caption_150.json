@@ -1,0 +1,10 @@
+{
+  "providers": [
+    {
+      "type": "ttf",
+      "file": "basalto:manrope-500.ttf",
+      "size": 6.5,
+      "oversample": 1.5
+    }
+  ]
+}
