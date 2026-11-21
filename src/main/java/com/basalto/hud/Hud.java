@@ -6,9 +6,16 @@ import java.util.List;
 
 import com.basalto.Basalto;
 import com.basalto.config.ClientSettings;
+import com.basalto.gui.ClickGuiScreen;
 import com.basalto.gui.Draw;
+import com.basalto.gui.ModuleIcons;
 import com.basalto.module.Module;
 import com.basalto.modules.combat.KillAura;
+import com.basalto.ui.Anim;
+import com.basalto.ui.Colors;
+import com.basalto.ui.Theme;
+import com.basalto.ui.Type;
+import com.basalto.ui.Ui;
 
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
@@ -23,64 +30,94 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.phys.EntityHitResult;
 
-/** Tudo que o client desenha na tela durante o jogo. */
+/** Tudo que o client desenha na tela durante o jogo, no mesmo estilo do menu. */
 public final class Hud {
-	private static int frames;
-	private static int fps;
-	private static long fpsWindowStart = System.currentTimeMillis();
+	private static final Ui UI = new Ui();
+	private static final float M = 6;
 
 	private Hud() {}
 
 	public static void render(GuiGraphicsExtractor g, DeltaTracker tracker) {
 		Minecraft mc = Minecraft.getInstance();
-		countFps();
-		if (mc.player == null || mc.options.hideGui) return;
+		if (mc.player == null || mc.options.hideGui || mc.screen instanceof ClickGuiScreen) return;
 		ClientSettings cs = Basalto.config().client;
-		Font f = mc.font;
-		int w = g.guiWidth();
-		int h = g.guiHeight();
+
+		// Armadura fica em coordenadas do jogo (itens 3D).
+		if (cs.hud("armor")) drawArmor(g, mc.font, mc.player, g.guiWidth(), g.guiHeight());
+
+		Anim.motion = cs.motion;
+		UI.begin(g, cs.theme(), Ui.autoDensity(mc.getWindow().getWidth(), mc.getWindow().getHeight(), cs.uiSize));
+		Theme t = UI.t;
 		int bg = cs.hudBgColor();
 
-		int leftY = 4;
-		if (cs.hud("watermark")) {
-			String fpsText = cs.hud("fps") ? fps + " FPS" : "";
-			int bw = 18 + f.width(Basalto.NAME) + (fpsText.isEmpty() ? 4 : 8 + f.width(fpsText)) + 4;
-			g.fill(4, leftY, 4 + bw, leftY + 16, bg);
-			Draw.cube(g, 6, leftY + 2, 12, cs.accent);
-			g.text(f, Basalto.NAME, 22, leftY + 4, 0xFFF3F4F6, true);
-			if (!fpsText.isEmpty()) g.text(f, fpsText, 22 + f.width(Basalto.NAME) + 8, leftY + 4, 0xFFD1D5DB, true);
-			leftY += 20;
-		} else if (cs.hud("fps")) {
-			g.text(f, fps + " FPS", 6, leftY, 0xFFD1D5DB, true);
-			leftY += 12;
+		float leftY = M;
+		if (cs.hud("watermark")) leftY = watermark(t, bg, cs.hud("fps"), leftY) + 4;
+		else if (cs.hud("fps")) {
+			UI.text(Type.BODY_SEMI, mc.getFps() + " FPS", M + 2, leftY, t.text);
+			leftY += 14;
 		}
-
-		if (cs.hud("coords")) leftY = drawCoords(g, f, mc.player, leftY, bg) + 4;
-		if (cs.hud("potions")) leftY = drawPotions(g, f, mc.player, leftY, bg) + 4;
-		if (cs.hud("keystrokes")) drawKeystrokes(g, f, mc, 6, h / 2 - 20, bg, cs.accent);
-		if (cs.hud("arraylist")) drawArrayList(g, f, w, bg, cs.accent);
-		if (cs.hud("armor")) drawArmor(g, f, mc.player, w, h);
-		if (cs.hud("target")) drawTarget(g, f, mc, w, h, bg, cs.accent);
-		if (cs.hud("notifications")) drawNotifications(g, f, w, h, bg, cs.accent);
+		if (cs.hud("coords") && !cs.streamerMode) leftY = coords(t, bg, mc.player, leftY) + 4;
+		if (cs.hud("potions")) leftY = potions(t, bg, mc.player, leftY) + 4;
+		if (cs.hud("keystrokes")) keystrokes(t, bg, mc, M, UI.H / 2 - 20);
+		if (cs.hud("arraylist")) arrayList(t, bg);
+		if (cs.hud("target")) target(t, bg, mc);
+		if (cs.hud("notifications")) notifications(t, bg);
+		UI.end();
 	}
 
-	private static void countFps() {
-		frames++;
-		long now = System.currentTimeMillis();
-		if (now - fpsWindowStart >= 1000) {
-			fps = frames;
-			frames = 0;
-			fpsWindowStart = now;
+	// ---------------------------------------------------------------- logo + FPS
+
+	private static float watermark(Theme t, int bg, boolean fps, float y) {
+		String name = "Basalto";
+		String f = Minecraft.getInstance().getFps() + " FPS";
+		float w = 10 + 12 + 5 + UI.width(Type.BRAND, name) + (fps ? 14 + UI.width(Type.LABEL, f) : 0) + 10;
+		float h = 20;
+		UI.shadow(M, y, w, h, 8, 2, 0.25f);
+		UI.round(M, y, w, h, Theme.R_LG, bg);
+		UI.ring(M, y, w, h, Theme.R_LG, t.border);
+		Draw.cube(UI.g, UI.px(M + 8), UI.px(y + 4), Math.round(12 * UI.p), t.accent);
+		float x = M + 25;
+		UI.textMid(Type.BRAND, name, x, y, h, t.text);
+		if (fps) {
+			x += UI.width(Type.BRAND, name) + 7;
+			UI.vline(x, y + 5, h - 10, t.borderStrong);
+			UI.textMid(Type.LABEL, f, x + 7, y, h, t.text2);
 		}
+		return y + h;
 	}
 
-	private static int drawCoords(GuiGraphicsExtractor g, Font f, LocalPlayer p, int y, int bg) {
-		List<String> lines = new ArrayList<>();
-		lines.add(String.format("XYZ  %.0f / %.0f / %.0f", p.getX(), p.getY(), p.getZ()));
-		lines.add(String.format("÷8  %.0f / %.0f   ×8  %.0f / %.0f", p.getX() / 8, p.getZ() / 8, p.getX() * 8, p.getZ() * 8));
-		Direction d = p.getDirection();
-		lines.add("Direção  " + directionName(d));
-		return box(g, f, lines, 4, y, bg);
+	// ---------------------------------------------------------------- caixas de linhas
+
+	private static float rows(Theme t, int bg, List<String[]> rows, float y) {
+		if (rows.isEmpty()) return y - 4;
+		float kw = 0, vw = 0;
+		for (String[] r : rows) {
+			kw = Math.max(kw, UI.width(Type.CAPTION, r[0]));
+			vw = Math.max(vw, UI.width(Type.BODY_MEDIUM, r[1]));
+		}
+		float w = 10 + kw + 10 + vw + 10;
+		float rh = 12;
+		float h = rows.size() * rh + 8;
+		UI.shadow(M, y, w, h, 8, 2, 0.25f);
+		UI.round(M, y, w, h, Theme.R_LG, bg);
+		UI.ring(M, y, w, h, Theme.R_LG, t.border);
+		float ry = y + 4;
+		for (String[] r : rows) {
+			UI.textMid(Type.CAPTION, r[0], M + 10, ry, rh, t.text3);
+			UI.textMid(Type.BODY_MEDIUM, r[1], M + 20 + kw, ry, rh, r.length > 2 ? t.accentText : t.text);
+			ry += rh;
+		}
+		return y + h;
+	}
+
+	private static float coords(Theme t, int bg, LocalPlayer p, float y) {
+		List<String[]> rows = new ArrayList<>();
+		rows.add(new String[] {"XYZ", String.format("%.0f, %.0f, %.0f", p.getX(), p.getY(), p.getZ())});
+		boolean nether = p.level().dimension().identifier().getPath().equals("the_nether");
+		if (nether) rows.add(new String[] {"Superfície", String.format("%.0f, %.0f", p.getX() * 8, p.getZ() * 8)});
+		else rows.add(new String[] {"Nether", String.format("%.0f, %.0f", p.getX() / 8, p.getZ() / 8)});
+		rows.add(new String[] {"Direção", directionName(p.getDirection())});
+		return rows(t, bg, rows, y);
 	}
 
 	private static String directionName(Direction d) {
@@ -93,8 +130,8 @@ public final class Hud {
 		};
 	}
 
-	private static int drawPotions(GuiGraphicsExtractor g, Font f, LocalPlayer p, int y, int bg) {
-		List<String> lines = new ArrayList<>();
+	private static float potions(Theme t, int bg, LocalPlayer p, float y) {
+		List<String[]> rows = new ArrayList<>();
 		for (MobEffectInstance e : p.getActiveEffects()) {
 			String name = e.getEffect().value().getDisplayName().getString();
 			if (e.getAmplifier() > 0) name += " " + (e.getAmplifier() + 1);
@@ -104,44 +141,119 @@ public final class Hud {
 				int s = e.getDuration() / 20;
 				time = (s / 60) + ":" + String.format("%02d", s % 60);
 			}
-			lines.add(name + "  " + time);
+			rows.add(new String[] {time, name});
 		}
-		if (lines.isEmpty()) return y - 4;
-		return box(g, f, lines, 4, y, bg);
+		return rows(t, bg, rows, y);
 	}
 
-	/** Caixa com várias linhas de texto; devolve o y do fim. */
-	private static int box(GuiGraphicsExtractor g, Font f, List<String> lines, int x, int y, int bg) {
-		int bw = 0;
-		for (String s : lines) bw = Math.max(bw, f.width(s));
-		int bh = lines.size() * 10 + 4;
-		g.fill(x, y, x + bw + 8, y + bh, bg);
-		for (int i = 0; i < lines.size(); i++) g.text(f, lines.get(i), x + 4, y + 3 + i * 10, 0xFFE5E7EB, true);
-		return y + bh;
-	}
+	// ---------------------------------------------------------------- lista de módulos
 
-	private static void drawArrayList(GuiGraphicsExtractor g, Font f, int w, int bg, int accent) {
+	private static void arrayList(Theme t, int bg) {
 		List<Module> active = new ArrayList<>();
 		for (Module m : Basalto.modules().all()) if (m.isEnabled() && m.showInHud) active.add(m);
-		active.sort(Comparator.comparingInt((Module m) -> f.width(label(m))).reversed());
-		int y = 2;
+		active.sort(Comparator.comparingDouble((Module m) -> width(m)).reversed());
+		float y = M;
+		float rh = 14;
 		for (Module m : active) {
-			String name = m.name;
+			float w = width(m) + 26;
+			float x = UI.W - M - w;
+			float k = UI.animFrom("hud:al:" + m.name, 0, 1, Theme.BASE);
+			x += (1 - k) * 12 * Anim.move();
+			UI.pushAlpha(k);
+			UI.round(x, y, w, rh - 2, Theme.R_MD, bg);
+			UI.icon(ModuleIcons.of(m.name), x + 6, y + 2.5f, 7, t.accentText);
+			UI.textMid(Type.BODY_MEDIUM, m.name, x + 17, y, rh - 2, t.text);
 			String info = m.getInfo();
-			int tw = f.width(label(m));
-			int x = w - tw - 9;
-			g.fill(x - 4, y, w, y + 11, bg);
-			g.fill(w - 2, y, w, y + 11, accent);
-			g.text(f, name, x, y + 2, 0xFFF3F4F6, true);
-			if (!info.isEmpty()) g.text(f, info, x + f.width(name + " "), y + 2, 0xFF9CA3AF, true);
-			y += 11;
+			if (!info.isEmpty()) UI.textMid(Type.LABEL, info, x + 17 + UI.width(Type.BODY_MEDIUM, m.name) + 4, y, rh - 2, t.text3);
+			UI.popAlpha();
+			y += rh * k;
 		}
 	}
 
-	private static String label(Module m) {
+	private static float width(Module m) {
 		String info = m.getInfo();
-		return info.isEmpty() ? m.name : m.name + " " + info;
+		return UI.width(Type.BODY_MEDIUM, m.name) + (info.isEmpty() ? 0 : 4 + UI.width(Type.LABEL, info));
 	}
+
+	// ---------------------------------------------------------------- teclas
+
+	private static void keystrokes(Theme t, int bg, Minecraft mc, float x, float y) {
+		float s = 18, gap = 2;
+		key(t, bg, "W", mc.options.keyUp.isDown(), x + s + gap, y, s);
+		key(t, bg, "A", mc.options.keyLeft.isDown(), x, y + s + gap, s);
+		key(t, bg, "S", mc.options.keyDown.isDown(), x + s + gap, y + s + gap, s);
+		key(t, bg, "D", mc.options.keyRight.isDown(), x + 2 * (s + gap), y + s + gap, s);
+	}
+
+	private static void key(Theme t, int bg, String k, boolean down, float x, float y, float s) {
+		float a = UI.anim("hud:key:" + k, down ? 1 : 0, 80);
+		UI.round(x, y, s, s, Theme.R_MD, Colors.mix(bg, t.accent, a));
+		UI.ring(x, y, s, s, Theme.R_MD, Colors.mix(t.border, 0x00000000, a));
+		UI.textCenter(Type.BODY_SEMI, k, x + s / 2, y + (s - Type.BODY_SEMI.lineHeight) / 2, Colors.mix(t.text, t.onAccent, a));
+	}
+
+	// ---------------------------------------------------------------- alvo
+
+	private static void target(Theme t, int bg, Minecraft mc) {
+		LivingEntity target = null;
+		KillAura ka = Basalto.modules().get(KillAura.class);
+		if (ka != null && ka.isEnabled() && ka.target != null && ka.target.isAlive()) target = ka.target;
+		if (target == null && mc.hitResult instanceof EntityHitResult ehr) {
+			Entity e = ehr.getEntity();
+			if (e instanceof LivingEntity le) target = le;
+		}
+		if (target == null) return;
+		float x = UI.W / 2 + 14;
+		float y = UI.H / 2 + 10;
+		String name = target.getName().getString();
+		float hp = target.getHealth();
+		float max = Math.max(1, target.getMaxHealth());
+		String hpText = String.format("%.1f / %.0f", hp, max);
+		String d = String.format("%.1f m", mc.player.distanceTo(target));
+		float w = Math.max(120, UI.width(Type.BODY_SEMI, name) + UI.width(Type.LABEL, d) + 30);
+		float h = 36;
+		UI.shadow(x, y, w, h, 8, 2, 0.25f);
+		UI.round(x, y, w, h, Theme.R_LG, bg);
+		UI.ring(x, y, w, h, Theme.R_LG, t.border);
+		UI.text(Type.BODY_SEMI, UI.fit(Type.BODY_SEMI, name, w - 50), x + 8, y + 5, t.text);
+		UI.textRight(Type.LABEL, d, x + w - 8, y + 5, t.text2);
+		float frac = Math.min(1, hp / max);
+		int col = frac > 0.5f ? t.accent : frac > 0.25f ? t.warning : t.danger;
+		UI.round(x + 8, y + 19, w - 16, 4, 2, t.dark ? 0xFF243032 : 0xFFD5DEDD);
+		UI.round(x + 8, y + 19, Math.max(4, (w - 16) * frac), 4, 2, col);
+		UI.text(Type.CAPTION, hpText, x + 8, y + 25, t.text2);
+	}
+
+	// ---------------------------------------------------------------- notificações
+
+	private static void notifications(Theme t, int bg) {
+		List<Notifications.Entry> list = Notifications.active();
+		float y = UI.H - 44;
+		long now = System.currentTimeMillis();
+		for (int i = list.size() - 1; i >= 0; i--) {
+			Notifications.Entry e = list.get(i);
+			String name = e.text().split(" ")[0];
+			String tag = e.on() ? "Ligado" : "Desligado";
+			float w = Math.max(UI.width(Type.BODY_SEMI, name), UI.width(Type.CAPTION, tag)) + 40;
+			float h = 26;
+			float age = (now - e.time()) / (float) Notifications.DURATION_MS;
+			float in = Math.min(1, age / 0.08f), out = age > 0.88f ? Math.max(0, (1 - age) / 0.12f) : 1;
+			float k = Ui.ease(in) * out;
+			float x = UI.W - M - w + (1 - Ui.ease(in)) * (w + M) * Anim.move();
+			UI.pushAlpha(Anim.motion == Anim.Motion.FULL ? out : k);
+			UI.shadow(x, y - h, w, h, 8, 2, 0.3f);
+			UI.round(x, y - h, w, h, Theme.R_LG, bg);
+			UI.ring(x, y - h, w, h, Theme.R_LG, e.on() ? t.accentBorder : t.border);
+			UI.round(x + 7, y - h + 6, 14, 14, Theme.R_SM, e.on() ? t.accentFill : t.surface2);
+			UI.icon(ModuleIcons.of(name), x + 10, y - h + 9, 8, e.on() ? t.accentText : t.text3);
+			UI.text(Type.BODY_SEMI, name, x + 27, y - h + 3, t.text);
+			UI.text(Type.CAPTION, tag, x + 27, y - h + 13.5f, e.on() ? t.accentText : t.text3);
+			UI.popAlpha();
+			y -= (h + 5) * k;
+		}
+	}
+
+	// ---------------------------------------------------------------- armadura (coordenadas do jogo)
 
 	private static void drawArmor(GuiGraphicsExtractor g, Font f, LocalPlayer p, int w, int h) {
 		EquipmentSlot[] slots = {EquipmentSlot.HEAD, EquipmentSlot.CHEST, EquipmentSlot.LEGS, EquipmentSlot.FEET};
@@ -153,68 +265,10 @@ public final class Hud {
 			g.item(s, x, y);
 			if (s.getMaxDamage() > 0) {
 				int pct = Math.round(100f * (s.getMaxDamage() - s.getDamageValue()) / s.getMaxDamage());
-				int col = pct > 50 ? 0xFF4ADE80 : pct > 20 ? 0xFFF59E0B : 0xFFF87171;
+				int col = pct > 50 ? 0xFF54F5C4 : pct > 20 ? 0xFFE9C46A : 0xFFF2817A;
 				g.text(f, pct + "%", x + 1, y - 8, col, true);
 			}
 			x += 20;
-		}
-	}
-
-	private static void drawKeystrokes(GuiGraphicsExtractor g, Font f, Minecraft mc, int x, int y, int bg, int accent) {
-		int s = 16, gap = 2;
-		key(g, f, "W", mc.options.keyUp.isDown(), x + s + gap, y, s, bg, accent);
-		key(g, f, "A", mc.options.keyLeft.isDown(), x, y + s + gap, s, bg, accent);
-		key(g, f, "S", mc.options.keyDown.isDown(), x + s + gap, y + s + gap, s, bg, accent);
-		key(g, f, "D", mc.options.keyRight.isDown(), x + 2 * (s + gap), y + s + gap, s, bg, accent);
-	}
-
-	private static void key(GuiGraphicsExtractor g, Font f, String k, boolean down, int x, int y, int s, int bg, int accent) {
-		g.fill(x, y, x + s, y + s, down ? accent : bg);
-		g.text(f, k, x + (s - f.width(k)) / 2, y + 4, down ? 0xFF06140A : 0xFFE5E7EB, false);
-	}
-
-	private static void drawTarget(GuiGraphicsExtractor g, Font f, Minecraft mc, int w, int h, int bg, int accent) {
-		LivingEntity target = null;
-		KillAura ka = Basalto.modules().get(KillAura.class);
-		if (ka != null && ka.isEnabled() && ka.target != null && ka.target.isAlive()) target = ka.target;
-		if (target == null && mc.hitResult instanceof EntityHitResult ehr) {
-			Entity e = ehr.getEntity();
-			if (e instanceof LivingEntity le) target = le;
-		}
-		if (target == null) return;
-		int x = w / 2 + 14;
-		int y = h / 2 + 10;
-		String name = target.getName().getString();
-		float hp = target.getHealth();
-		float max = Math.max(1, target.getMaxHealth());
-		String hpText = String.format("%.1f / %.0f", hp, max);
-		double dist = mc.player.distanceTo(target);
-		int bw = Math.max(110, Math.max(f.width(name) + 40, f.width(hpText) + 8));
-		g.fill(x, y, x + bw, y + 30, bg);
-		g.text(f, name, x + 4, y + 3, 0xFFF3F4F6, true);
-		String d = String.format("%.1fm", dist);
-		g.text(f, d, x + bw - 4 - f.width(d), y + 3, 0xFF9CA3AF, true);
-		g.fill(x + 4, y + 14, x + bw - 4, y + 17, 0xFF262A33);
-		g.fill(x + 4, y + 14, x + 4 + Math.round((bw - 8) * Math.min(1, hp / max)), y + 17, accent);
-		g.text(f, hpText, x + 4, y + 20, 0xFFD1D5DB, true);
-	}
-
-	private static void drawNotifications(GuiGraphicsExtractor g, Font f, int w, int h, int bg, int accent) {
-		List<Notifications.Entry> list = Notifications.active();
-		int y = h - 40;
-		long now = System.currentTimeMillis();
-		for (int i = list.size() - 1; i >= 0; i--) {
-			Notifications.Entry e = list.get(i);
-			String tag = e.on() ? "ON" : "OFF";
-			int bw = f.width(e.text()) + f.width(tag) + 18;
-			float age = (now - e.time()) / (float) Notifications.DURATION_MS;
-			int slide = age < 0.08f ? Math.round((1 - age / 0.08f) * (bw + 6)) : 0;
-			int x = w - bw - 6 + slide;
-			g.fill(x, y - 16, x + bw, y, bg);
-			g.fill(x, y - 16, x + 2, y, e.on() ? accent : 0xFF6B7280);
-			g.text(f, e.text(), x + 7, y - 12, 0xFFE5E7EB, true);
-			g.text(f, tag, x + bw - 5 - f.width(tag), y - 12, e.on() ? accent : 0xFF9CA3AF, true);
-			y -= 19;
 		}
 	}
 }
