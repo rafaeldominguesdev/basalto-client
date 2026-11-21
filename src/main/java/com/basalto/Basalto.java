@@ -87,7 +87,17 @@ public final class Basalto implements ClientModInitializer {
 			openMenu = true;
 			return;
 		}
+		for (Module m : modules.all()) {
+			if (m.key != key) continue;
+			if (m.holdKey) m.setEnabled(true);
+			else m.toggle();
+		}
+	}
+
+	/** Solta a tecla: desliga os módulos no modo "segurar". */
+	public static void onKeyRelease(int key) {
+		if (modules == null || key < 0) return;
 		for (Module m : modules.all())
-			if (m.key == key) m.toggle();
+			if (m.key == key && m.holdKey && m.isEnabled()) m.setEnabled(false);
 	}
 }

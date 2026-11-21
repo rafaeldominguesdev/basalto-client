@@ -26,6 +26,10 @@ public abstract class Setting<T> {
 		this.value = defaultValue;
 	}
 
+	public boolean isDefault() {
+		return java.util.Objects.equals(value, defaultValue);
+	}
+
 	/** Texto mostrado no menu, ex.: "Alcance: 4.2". */
 	public abstract String display();
 

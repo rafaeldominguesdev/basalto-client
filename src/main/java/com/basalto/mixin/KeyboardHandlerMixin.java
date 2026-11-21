@@ -17,5 +17,6 @@ public class KeyboardHandlerMixin {
 	@Inject(method = "keyPress(JILnet/minecraft/client/input/KeyEvent;)V", at = @At("HEAD"))
 	private void basalto$onKeyPress(long window, int action, KeyEvent event, CallbackInfo ci) {
 		if (action == GLFW.GLFW_PRESS) Basalto.onKey(event.key());
+		else if (action == GLFW.GLFW_RELEASE) Basalto.onKeyRelease(event.key());
 	}
 }

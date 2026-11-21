@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.basalto.Basalto;
+import com.basalto.hud.Activity;
 import com.basalto.hud.Notifications;
 import com.basalto.setting.Setting;
 
@@ -26,6 +27,8 @@ public abstract class Module {
 	public int key = -1;
 	/** Aparece na lista de módulos ativos do HUD. */
 	public boolean showInHud = true;
+	/** A tecla liga só enquanto está apertada (em vez de alternar). */
+	public boolean holdKey;
 
 	protected Module(String name, Category category, String description) {
 		this.name = name;
@@ -59,7 +62,10 @@ public abstract class Module {
 		} catch (Exception e) {
 			Basalto.LOGGER.error("Erro ao alternar " + name, e);
 		}
-		if (notify) Notifications.push(name + (value ? " ativado" : " desativado"), value);
+		if (notify) {
+			Notifications.push(name + (value ? " ativado" : " desativado"), value);
+			Activity.log(value ? Activity.Kind.ON : Activity.Kind.OFF, null, name + (value ? " ligado" : " desligado"));
+		}
 		Basalto.config().markDirty();
 	}
 
