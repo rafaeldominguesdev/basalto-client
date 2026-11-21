@@ -1,0 +1,26 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "com.basalto.mixin",
+  "compatibilityLevel": "JAVA_25",
+  "client": [
+    "CameraMixin",
+    "DeltaTrackerTimerMixin",
+    "EntityMixin",
+    "GameRendererMixin",
+    "IndigoBlockRendererMixin",
+    "KeyboardHandlerMixin",
+    "LevelMixin",
+    "LivingEntityMixin",
+    "LocalPlayerMixin",
+    "MinecraftMixin",
+    "ModelBlockRendererMixin",
+    "PlayerMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  },
+  "overwrites": {
+    "requireAnnotations": true
+  }
+}

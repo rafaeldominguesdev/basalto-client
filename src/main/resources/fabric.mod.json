@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "id": "basalto",
+  "version": "${version}",
+  "name": "Basalto Client",
+  "description": "Client de utilidades com ClickGUI, HUD e módulos. Use no singleplayer ou em servidores seus.",
+  "authors": ["Rafael Domingues"],
+  "license": "All-Rights-Reserved",
+  "icon": "assets/basalto/icon.png",
+  "environment": "client",
+  "entrypoints": {
+    "client": ["com.basalto.Basalto"]
+  },
+  "mixins": ["basalto.mixins.json"],
+  "accessWidener": "basalto.accesswidener",
+  "depends": {
+    "fabricloader": ">=0.20.1",
+    "fabric-api": "*",
+    "minecraft": "~26.1.2",
+    "java": ">=25"
+  }
+}
