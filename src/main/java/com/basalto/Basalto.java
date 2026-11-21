@@ -24,6 +24,8 @@ public final class Basalto implements ClientModInitializer {
 
 	private static ModuleManager modules;
 	private static ConfigManager config;
+	/** Pedido de abrir o menu, atendido no próximo tick (ver onKey). */
+	private static boolean openMenu;
 
 	public static ModuleManager modules() {
 		return modules;
@@ -49,6 +51,10 @@ public final class Basalto implements ClientModInitializer {
 				} catch (Exception e) {
 					LOGGER.error("Erro no módulo " + m.name, e);
 				}
+			}
+			if (openMenu) {
+				openMenu = false;
+				if (client.screen == null) client.setScreen(new ClickGuiScreen());
 			}
 			config.tick();
 		});
@@ -77,7 +83,8 @@ public final class Basalto implements ClientModInitializer {
 		Minecraft mc = Minecraft.getInstance();
 		if (mc.screen != null) return;
 		if (key == config.client.menuKey) {
-			mc.setScreen(new ClickGuiScreen());
+			// Abrir aqui faria o jogo repassar esta mesma tecla para o menu, que fecharia na hora.
+			openMenu = true;
 			return;
 		}
 		for (Module m : modules.all())
