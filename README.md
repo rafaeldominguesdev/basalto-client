@@ -20,7 +20,7 @@ Client de mods com menu próprio (Right Shift), HUD configurável, teclas por m�
    gradlew.bat build
    ```
    A primeira vez demora alguns minutos (baixa o Gradle e o Minecraft).
-4. O mod fica em `build\libs\basalto-0.2.0.jar`.
+4. O mod fica em `build\libs\basalto-0.2.1.jar`.
 
 Se der erro na compilação, copie o texto do erro e mande pro Claude que ele corrige.
 
@@ -28,7 +28,7 @@ Se der erro na compilação, copie o texto do erro e mande pro Claude que ele co
 
 1. Instale o **Fabric Loader** para **26.1.2**: https://fabricmc.net/use/installer/
 2. Baixe a **Fabric API** para 26.1.2 (versão 0.155.3+26.1.2 ou mais nova): https://modrinth.com/mod/fabric-api
-3. Coloque os dois `.jar` (Fabric API + `basalto-0.2.0.jar`) em:
+3. Coloque os dois `.jar` (Fabric API + `basalto-0.2.1.jar`) em:
    `%appdata%\.minecraft\mods`
 4. No launcher, escolha o perfil **fabric-loader-26.1.2** e jogue.
 
