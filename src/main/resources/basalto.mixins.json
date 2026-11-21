@@ -11,6 +11,7 @@
     "IndigoBlockRendererMixin",
     "KeyboardHandlerMixin",
     "LevelMixin",
+    "LightmapMixin",
     "LivingEntityMixin",
     "LocalPlayerMixin",
     "MinecraftMixin",
