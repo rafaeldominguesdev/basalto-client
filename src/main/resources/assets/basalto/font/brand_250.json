@@ -4,7 +4,7 @@
       "type": "ttf",
       "file": "basalto:manrope-800.ttf",
       "size": 8,
-      "oversample": 2.5
+      "oversample": 5.0
     }
   ]
 }

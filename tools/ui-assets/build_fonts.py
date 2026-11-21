@@ -1,7 +1,7 @@
 """Gera os JSON de fonte da interface (Manrope) para cada estilo e densidade.
 
-O Minecraft desenha TTF com filtro "nearest", então cada estilo tem uma versão
-por densidade (1 a 4 pixels por unidade, em passos) para a letra sair nítida.
+Cada estilo tem uma versão por densidade (1 a 4 pixels por unidade, em passos),
+para a letra ter sempre a mesma proporção de texels por pixel de tela.
 Precisa casar com com.basalto.ui.Type.
 """
 import json
@@ -20,6 +20,10 @@ STYLES = {
     'brand': (800, 8),
 }
 
+# As letras são rasterizadas com o dobro da resolução da tela e reduzidas com
+# filtro linear (ver GlyphRenderStateMixin): fica liso como texto de sistema.
+SUPERSAMPLE = 2
+
 # Pixels de tela por unidade da interface que o jogo pode usar.
 DENSITIES = [1, 1.25, 1.5, 1.75, 2, 2.5, 3, 3.5, 4]
 
@@ -31,7 +35,7 @@ for name, (weight, size) in STYLES.items():
             'type': 'ttf',
             'file': f'basalto:manrope-{weight}.ttf',
             'size': size,
-            'oversample': density,
+            'oversample': density * SUPERSAMPLE,
         }]}
         with open(os.path.join(out, f'{name}_{int(density * 100)}.json'), 'w') as fh:
             json.dump(data, fh, indent=2)
