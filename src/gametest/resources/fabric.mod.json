@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "id": "basalto-gametest",
+  "version": "1.0.0",
+  "name": "Basalto GameTest",
+  "environment": "client",
+  "entrypoints": {
+    "fabric-client-gametest": ["com.basalto.test.BasaltoClientTest"]
+  },
+  "depends": {
+    "basalto": "*"
+  }
+}

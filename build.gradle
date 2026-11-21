@@ -36,3 +36,22 @@ java {
 	sourceCompatibility = JavaVersion.VERSION_25
 	targetCompatibility = JavaVersion.VERSION_25
 }
+
+// Testes automáticos dentro do jogo (pasta src/gametest, não vão para o .jar).
+// Rodar com: ./gradlew runClientGameTest
+fabricApi {
+	configureTests {
+		createSourceSet = true
+		modId = "basalto-gametest"
+		enableGameTests = false
+		enableClientGameTests = true
+		eula = true
+	}
+}
+
+loom {
+	runs.matching { it.name == "clientGameTest" }.configureEach {
+		// Avisa no log quando uma injeção de mixin não encontra o alvo.
+		vmArg "-Dmixin.debug.countInjections=true"
+	}
+}
