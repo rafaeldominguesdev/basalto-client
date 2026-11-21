@@ -2,16 +2,8 @@ package com.basalto.gui;
 
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 
-/** Pequenos utilitários de desenho para o menu e o HUD. */
+/** O ícone do Basalto (cubo isométrico), desenhado com polígonos. */
 public final class Draw {
-	public static final int TEXT = 0xFFE5E7EB;
-	public static final int TEXT_DIM = 0xFF9CA3AF;
-	public static final int TEXT_DARK = 0xFF06140A;
-	public static final int HEADER = 0xF0161920;
-	public static final int FIELD = 0xFF0B0D11;
-	public static final int BORDER = 0xFF2E333D;
-	public static final int HOVER = 0x22FFFFFF;
-
 	private Draw() {}
 
 	/** Escurece/clareia uma cor ARGB mantendo o alfa. */
@@ -21,13 +13,6 @@ public final class Draw {
 		int g = Math.min(255, (int) (((argb >> 8) & 0xFF) * f));
 		int b = Math.min(255, (int) ((argb & 0xFF) * f));
 		return (a << 24) | (r << 16) | (g << 8) | b;
-	}
-
-	public static void border(GuiGraphicsExtractor g, int x1, int y1, int x2, int y2, int color) {
-		g.fill(x1, y1, x2, y1 + 1, color);
-		g.fill(x1, y2 - 1, x2, y2, color);
-		g.fill(x1, y1, x1 + 1, y2, color);
-		g.fill(x2 - 1, y1, x2, y2, color);
 	}
 
 	/** Preenche um polígono convexo linha por linha. */
